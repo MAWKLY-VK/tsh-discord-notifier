@@ -9,9 +9,13 @@ on:
   workflow_dispatch:
     inputs:
       latest:
-        description: "Also post the latest N opened PRs, merged PRs and releases (webhook test). 0 = normal run"
+        description: "Also post the latest N opened, merged and closed PRs and releases (webhook test). 0 = normal run"
         required: false
         default: "0"
+      dry_run:
+        description: "Only print the messages in the run log; post nothing"
+        type: boolean
+        default: false
 
 permissions:
   contents: write # commit state.json
@@ -31,8 +35,21 @@ jobs:
         env:
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Optional secret: a Google Cloud Translation API key. Without it, or
+          # when Google fails, the free MyMemory service is used.
+          GOOGLE_TRANSLATE_API_KEY: ${{ secrets.GOOGLE_TRANSLATE_API_KEY }}
+          # Optional secret: an email raises the free MyMemory translation
+          # quota from 5,000 to 50,000 characters a day.
+          MYMEMORY_EMAIL: ${{ secrets.MYMEMORY_EMAIL }}
+          # Settings (see README): translation on/off, daily digest on/off,
+          # the digest's time zone in hours from UTC, and the PR types not posted.
+          TRANSLATE: "1"
+          DIGEST: "1"
+          DIGEST_UTC_OFFSET: "3"
+          SKIP_TYPES: "ci,build,test,style,refactor,chore,docs"
           LATEST: ${{ inputs.latest || '0' }}
-        run: python3 notifier.py --latest "$LATEST"
+          DRY_RUN: ${{ inputs.dry_run && '--dry-run' || '' }}
+        run: python3 notifier.py --latest "$LATEST" $DRY_RUN
 
       # Runs even when posting failed part-way, so what was posted is remembered.
       - name: Save state.json
