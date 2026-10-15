@@ -1,0 +1,49 @@
+name: TSH to Discord
+
+on:
+  schedule:
+    # Every 30 minutes. GitHub may start scheduled runs a few minutes late.
+    # In a public repo you can use "*/15 * * * *"; keep 30 minutes in a
+    # private repo to stay inside the free 2000 Actions minutes per month.
+    - cron: "8,38 * * * *"
+  workflow_dispatch:
+    inputs:
+      latest:
+        description: "Also post the latest N opened PRs, merged PRs and releases (webhook test). 0 = normal run"
+        required: false
+        default: "0"
+
+permissions:
+  contents: write # commit state.json
+
+concurrency:
+  group: tsh-discord-notifier
+  cancel-in-progress: false
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Post new activity to Discord
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          LATEST: ${{ inputs.latest || '0' }}
+        run: python3 notifier.py --latest "$LATEST"
+
+      # Runs even when posting failed part-way, so what was posted is remembered.
+      - name: Save state.json
+        if: success() || failure()
+        run: |
+          git add state.json 2>/dev/null || exit 0
+          if git diff --cached --quiet; then
+            echo "state.json unchanged"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "Update notifier state"
+          git push || (git pull --rebase && git push)

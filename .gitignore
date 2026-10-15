@@ -1,0 +1,6 @@
+# Never commit the webhook URL: anyone who has it can post to your channel.
+discord_webhook.txt
+notifier.log
+*.old.log
+state.tmp
+__pycache__/
