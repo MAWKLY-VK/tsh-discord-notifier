@@ -2,10 +2,10 @@ name: TSH to Discord
 
 on:
   schedule:
-    # Every 30 minutes. GitHub may start scheduled runs a few minutes late.
-    # In a public repo you can use "*/15 * * * *"; keep 30 minutes in a
-    # private repo to stay inside the free 2000 Actions minutes per month.
-    - cron: "8,38 * * * *"
+    # Every 6 hours, at 00:08, 06:08, 12:08 and 18:08 in UTC+3 (cron is in
+    # UTC), so the daily digest goes out just after midnight. GitHub may start
+    # scheduled runs a few minutes late.
+    - cron: "8 3,9,15,21 * * *"
   workflow_dispatch:
     inputs:
       latest:
